@@ -1,0 +1,220 @@
+// ===== INITIAL DATA =====
+let products = JSON.parse(localStorage.getItem("nextgen_products")) || [
+  { id: 1, name: "Acer Predator Helios 300", price: 1499, stock: 5, category: "laptop", image: "💻" },
+  { id: 2, name: "iPad Pro M2", price: 1099, stock: 12, category: "tablet", image: "📱" },
+  { id: 3, name: "ASUS ROG Zephyrus G14", price: 1699, stock: 3, category: "laptop", image: "💻" },
+  { id: 4, name: "Samsung Galaxy Tab S9", price: 799, stock: 8, category: "tablet", image: "📱" },
+  { id: 5, name: "MSI Raider GE78", price: 2899, stock: 2, category: "laptop", image: "💻" },
+  { id: 6, name: "Lenovo Tab P12 Pro", price: 599, stock: 15, category: "tablet", image: "📱" }
+];
+
+let cart = JSON.parse(localStorage.getItem("nextgen_cart")) || [];
+let currentFilter = 'all';
+
+// ===== SAVE TO LOCALSTORAGE =====
+function saveProducts() {
+  localStorage.setItem("nextgen_products", JSON.stringify(products));
+}
+
+function saveCart() {
+  localStorage.setItem("nextgen_cart", JSON.stringify(cart));
+}
+
+// ===== DISPLAY PRODUCTS =====
+function displayProducts() {
+  const container = document.getElementById("products");
+  const searchTerm = document.getElementById("searchInput")?.value.toLowerCase() || "";
+  
+  let filtered = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm);
+    const matchesCategory = currentFilter === 'all' || p.category === currentFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #888;">
+        <h3>No products found</h3>
+        <p>Try a different search or category</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(p => {
+    const stockClass = p.stock === 0 ? 'out' : p.stock <= 3 ? 'low' : '';
+    const stockText = p.stock === 0 ? 'OUT OF STOCK' : p.stock <= 3 ? `Only ${p.stock} left!` : `${p.stock} in stock`;
+    const disabled = p.stock === 0 ? 'disabled' : '';
+    
+    return `
+      <div class="card">
+        <div class="card-image">${p.image}</div>
+        <div class="card-body">
+          <span class="card-category cat-${p.category}">${p.category}</span>
+          <h3>${p.name}</h3>
+          <div class="card-price">$${p.price}</div>
+          <div class="card-stock ${stockClass}">${stockText}</div>
+          <button class="add-cart-btn" onclick="addToCart(${p.id})" ${disabled}>
+            ${p.stock === 0 ? 'Sold Out' : 'Add to Cart'}
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== SEARCH =====
+function searchProducts() {
+  displayProducts();
+}
+
+// ===== FILTER CATEGORY =====
+function filterCategory(category) {
+  currentFilter = category;
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', 
+      (category === 'all' && btn.textContent.includes('All')) ||
+      (category === 'laptop' && btn.textContent.includes('Laptop')) ||
+      (category === 'tablet' && btn.textContent.includes('Tablet'))
+    );
+  });
+  displayProducts();
+}
+
+// ===== CART FUNCTIONS =====
+function addToCart(id) {
+  const product = products.find(p => p.id === id);
+  if (!product || product.stock <= 0) {
+    showToast("Product out of stock!", "error");
+    return;
+  }
+
+  const existingItem = cart.find(item => item.id === id);
+  if (existingItem) {
+    if (existingItem.qty < product.stock) {
+      existingItem.qty++;
+      showToast(`Added another ${product.name} to cart`);
+    } else {
+      showToast("Maximum stock reached!", "error");
+      return;
+    }
+  } else {
+    cart.push({ id: product.id, name: product.name, price: product.price, qty: 1 });
+    showToast(`${product.name} added to cart!`);
+  }
+
+  saveCart();
+  updateCartCount();
+}
+
+function updateCartCount() {
+  const count = cart.reduce((sum, item) => sum + item.qty, 0);
+  const badge = document.getElementById("cartCount");
+  if (badge) badge.textContent = count;
+}
+
+function toggleCart() {
+  const modal = document.getElementById("cartModal");
+  modal.classList.toggle("active");
+  if (modal.classList.contains("active")) renderCart();
+}
+
+function renderCart() {
+  const container = document.getElementById("cartItems");
+  const totalEl = document.getElementById("cartTotal");
+  
+  if (cart.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #888; padding: 2rem;">Your cart is empty</p>';
+    totalEl.textContent = "0";
+    return;
+  }
+
+  container.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <div class="cart-item-info">
+        <h4>${item.name}</h4>
+        <div class="cart-item-price">$${item.price} each</div>
+      </div>
+      <div class="cart-item-qty">
+        <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
+        <span>${item.qty}</span>
+        <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+      </div>
+      <button class="remove-btn" onclick="removeFromCart(${item.id})">🗑️</button>
+    </div>
+  `).join('');
+
+  const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  totalEl.textContent = total.toLocaleString();
+}
+
+function changeQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  const product = products.find(p => p.id === id);
+  
+  if (!item) return;
+  
+  const newQty = item.qty + delta;
+  if (newQty <= 0) {
+    removeFromCart(id);
+  } else if (newQty <= product.stock) {
+    item.qty = newQty;
+    saveCart();
+    renderCart();
+    updateCartCount();
+  } else {
+    showToast("Not enough stock!", "error");
+  }
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(item => item.id !== id);
+  saveCart();
+  renderCart();
+  updateCartCount();
+  showToast("Item removed from cart");
+}
+
+function checkout() {
+  if (cart.length === 0) {
+    showToast("Cart is empty!", "error");
+    return;
+  }
+  
+  // Reduce stock
+  cart.forEach(item => {
+    const product = products.find(p => p.id === item.id);
+    if (product) product.stock -= item.qty;
+  });
+  
+  saveProducts();
+  cart = [];
+  saveCart();
+  updateCartCount();
+  toggleCart();
+  displayProducts();
+  showToast("Order placed successfully! 🎉", "success");
+}
+
+// ===== TOAST NOTIFICATION =====
+function showToast(message, type = "success") {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = type === "success" ? `✅ ${message}` : `❌ ${message}`;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(100px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  displayProducts();
+  updateCartCount();
+});

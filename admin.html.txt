@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Nextgen_db</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-body">
+
+  <nav class="navbar">
+    <div class="logo">
+      <span class="rgb-text">Nextgen_db</span>
+      <span class="admin-tag">ADMIN</span>
+    </div>
+    <div class="nav-links">
+      <a href="index.html">Shop</a>
+      <a href="#" onclick="logout()" id="logoutBtn" style="display:none;">Logout</a>
+    </div>
+  </nav>
+
+  <!-- Login Section -->
+  <div id="loginSection" class="login-container">
+    <div class="login-card">
+      <h2 class="rgb-glow">Admin Access</h2>
+      <div class="input-group">
+        <input type="text" id="username" placeholder="Username" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <input type="password" id="password" placeholder="Password">
+      </div>
+      <button class="login-btn" onclick="login()">🔐 Login</button>
+      <p class="hint">Default: admin / 1234</p>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="adminDashboard" style="display:none;">
+    
+    <div class="admin-stats">
+      <div class="stat-card">
+        <h3 id="totalProducts">0</h3>
+        <p>Products</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="totalStock">0</h3>
+        <p>Total Stock</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="totalValue">$0</h3>
+        <p>Inventory Value</p>
+      </div>
+    </div>
+
+    <div class="admin-panel">
+      <div class="form-section">
+        <h3 class="rgb-text">Add New Product</h3>
+        <div class="form-grid">
+          <input type="text" id="newName" placeholder="Product Name">
+          <input type="number" id="newPrice" placeholder="Price ($)" min="0">
+          <input type="number" id="newStock" placeholder="Stock" min="0">
+          <select id="newCategory">
+            <option value="laptop">Laptop</option>
+            <option value="tablet">Tablet</option>
+          </select>
+          <input type="text" id="newImage" placeholder="Image URL (optional)">
+        </div>
+        <button class="add-btn" onclick="addProduct()">➕ Add Product</button>
+      </div>
+
+      <div class="table-section">
+        <h3 class="rgb-text">Manage Inventory</h3>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Image</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminProductList">
+              <!-- Admin products injected here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
